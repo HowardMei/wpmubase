@@ -25,8 +25,8 @@
  * 
  * embed_video_height - Leave empty to automatically set at a 16:9 ratio to the width
  * 
- * post_formats - Array of WordPress extra post formats. i.e. aside, image, video, quote,
- * 		and/or link
+ * post_formats - Array of WordPress extra post formats. i.e. aside, gallery, link, image, 
+ * 		quote, status, video, audio, chat.
  * 
  * touch_support - Whether to load touch support for carousels (sliders)
  * 
@@ -57,11 +57,13 @@ $defaults = array(
 	'embed_video_width' 		=> 1170, // full-width videos on full-width pages
 	'embed_video_height' 		=> null, // i.e. calculate it automatically
 	'post_formats' 				=> null,
+	//'post_formats'				=> array( 'aside', 'gallery', 'link', 'image', 'quote', 'status', 'video', 'audio', 'chat' ),
 	'touch_support' 			=> true,
 	'fontawesome' 				=> true,
 	'bootstrap_gradients' 		=> false,
 	'navbar_classes'			=> 'navbar-default navbar-static-top',
 	'custom_header_location' 	=> 'header',
+	'site_logo'					=> false,
 	'image_keyboard_nav' 		=> true,
 	'sample_widgets' 			=> true,
 	'sample_footer_menu'		=> true,
@@ -85,7 +87,7 @@ $theme_options = $xsbf_theme_options;
 $content_width = $xsbf_theme_options['content_width'];
 
 /**
- * Set up theme defaults and register support for various WordPress features.
+ * Setup theme defaults and register support for various WordPress features.
  *
  * Note that this function is hooked into the after_setup_theme hook, which runs
  * before the init hook. The init hook is too late for some features, such as indicating
@@ -103,7 +105,8 @@ function xsbf_setup() {
 	// specific crop parameters handled.
 	add_theme_support( 'post-thumbnails' );
 	set_post_thumbnail_size( 640, 360, array( 'left', 'top' ) ); // crop left top
-	//add_image_size( 'section-image', 1600, 400, array( 'center', 'center' ) ); // section image
+	//set_post_thumbnail_size( 750, 422, array( 'left', 'top' ) ); // crop left top
+	//add_image_size( 'gallery-image', 640, 360, array( 'left', 'top' ) ); // gallery/portfolio
 
 	// This theme uses wp_nav_menu() in two locations. As of WordPress v3.0.
 	register_nav_menus( array(
@@ -111,13 +114,14 @@ function xsbf_setup() {
 		'footer' 	=> __( 'Footer Menu', 'flat-bootstrap' ),
 	) );
 
-	// This feature outputs HTML5 markup for the comment forms, search forms and 
-	// comment lists. As of WordPress v3.6.
+	// This feature outputs HTML5 markup for the comment forms, search forms, comment 
+	// lists, etc. As of WordPress v3.6.
 	add_theme_support( 'html5', array( 'comment-list', 'comment-form', 'search-form' ) );
+	//add_theme_support( 'html5', array( 'comment-list', 'comment-form', 'search-form', 'gallery', 'caption' ) );
 	
 	// Add editor CSS to style the WordPress visual post / page editor. Ours mainly
 	// pulls in all of our front-end CSS.
-	add_editor_style( '/css/editor-style.css' );
+	add_editor_style( 'css/editor-style.css' );
 
 	// Setup the WordPress core custom background feature. As of WordPress v3.4. This 
 	// theme is full-width up to 1600px, so background will only show when user's
@@ -131,6 +135,9 @@ function xsbf_setup() {
 	// Look at TwentyEleven theme for this.  As of WordPress v3.1.
 	if( ! empty ( $xsbf_theme_options['post_formats']) ) {
 		add_theme_support( 'post-formats', $xsbf_theme_options['post_formats'] );
+		
+		// Also add these post-formats to pages!
+		//add_post_type_support( 'page', 'post-formats' );
 	 }
 
 	// Enable support for excerpts on Pages. This is mainly for the Page with Subpages
@@ -144,6 +151,18 @@ function xsbf_setup() {
 } // end function
 add_action( 'after_setup_theme', 'xsbf_setup' );
 endif; // end ! function_exists
+
+/**
+ * Add our custom image size to the WordPress gallery drop-down list
+ */
+/*
+add_filter( 'image_size_names_choose', 'xsbf_image_sizes' );
+function xsbf_image_sizes( $sizes ) {
+    return array_merge( $sizes, array(
+        'gallery-image' => __( 'Gallery Image (640x360)' ),
+    ) );
+}
+*/
 
 /**
  * Register widgetized areas
@@ -210,41 +229,41 @@ function xsbf_scripts() {
 	/* LOAD STYLESHEETS */
 
 	// Load our custom version of Bootsrap CSS. Can easily override in a child theme.
-	wp_register_style('bootstrap', get_template_directory_uri() . '/bootstrap/css/bootstrap.min.css', array(), '3.1.0', 'all' );
+	wp_register_style('bootstrap', get_template_directory_uri() . '/bootstrap/css/bootstrap.min.css', array(), '3.3.2', 'all' );
 	wp_enqueue_style( 'bootstrap');
 
 	// If desired, load up the bootstrap-theme CSS for a full gradient look. Note you'll
 	// need to style other theme elements to match.
 	if ( $xsbf_theme_options['bootstrap_gradients'] ) {
-		wp_register_style('bootstrap-theme', get_template_directory_uri() . '/bootstrap/css/bootstrap-theme.min.css', array(), '3.1.0', 'all' );
+		wp_register_style('bootstrap-theme', get_template_directory_uri() . '/bootstrap/css/bootstrap-theme.min.css', array( 'bootstrap' ), '3.3.2', 'all' );
 		wp_enqueue_style( 'bootstrap-theme');
 	}
 	
 	// Our base WordPress CSS that handles default margins, paddings, etc.
-	wp_register_style('theme-base', get_template_directory_uri() . '/css/theme-base.css', '', '20140913', 'all' );
+	wp_register_style('theme-base', get_template_directory_uri() . '/css/theme-base.css', array( 'bootstrap' ), '20150201', 'all' );
 	wp_enqueue_style( 'theme-base');
 
 	// Our base theme CSS that adds colored sections and padding.
-	wp_register_style('theme-flat', get_template_directory_uri() . '/css/theme-flat.css', array( 'bootstrap', 'theme-base' ), '20140913', 'all' );
+	wp_register_style('theme-flat', get_template_directory_uri() . '/css/theme-flat.css', array( 'bootstrap', 'theme-base' ), '20150201', 'all' );
 	wp_enqueue_style( 'theme-flat');
 
 	// Load Google Fonts: Lato and Raleway
-	wp_enqueue_style( 'google_fonts', '//fonts.googleapis.com/css?family=Lato:300,400,700|Raleway:400,300,700',array(), null, 'screen' );	
+	wp_enqueue_style( 'google_fonts', '//fonts.googleapis.com/css?family=Lato:300,400,700|Raleway:400,300,700', array(), null, 'screen' );	
 
 	// Add font-awesome support	
 	if ( isset ( $xsbf_theme_options['fontawesome'] ) AND $xsbf_theme_options['fontawesome'] ) {
-		wp_register_style('font-awesome', get_template_directory_uri() . '/font-awesome/css/font-awesome.min.css', array(), '4.0.3', 'all' );
+		wp_register_style('font-awesome', get_template_directory_uri() . '/font-awesome/css/font-awesome.min.css', array(), '4.3.0', 'all' );
 		wp_enqueue_style( 'font-awesome');
 	}
 
 	// This theme's stylesheet, which contains the theme-specific CSS for coloring
 	// content header, footer, etc.
-	wp_enqueue_style( 'xtremelysocial-style', get_stylesheet_uri() );
+	wp_enqueue_style( 'flat-bootstrap', get_stylesheet_uri() );
 
 	/* LOAD JAVASCRIPT */
 
 	// Bootsrap core javascript
-	wp_enqueue_script( 'bootstrap', get_template_directory_uri() . '/bootstrap/js/bootstrap.min.js', array('jquery'), '3.1.0', true );
+	wp_enqueue_script( 'bootstrap', get_template_directory_uri() . '/bootstrap/js/bootstrap.min.js', array('jquery'), '3.3.2', true );
 
 	// jquery mobile script is a custom download with ONLY "touch" functions. Load
 	// this just on single posts and pages where a carousel might be placed
@@ -298,6 +317,9 @@ function xsbf_load_includes() {
 	/**
 	 * OPTIONAL INCLUDE FILES
 	 */
+
+	//Overide the standard WordPress Gallery shortcode with Bootstrap styles
+	//include_once get_template_directory() . '/inc/bootstrap-gallery.php';
  
 	// Implement the WordPress Custom Header feature. Optional.
 	include_once get_template_directory() . '/inc/custom-header.php';
